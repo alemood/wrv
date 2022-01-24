@@ -193,8 +193,8 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
 
   FUN <- function(i) {
     d <- div.sw[div.sw$YearMonth == i, , drop=FALSE]
-    d <- dplyr::summarise_(dplyr::group_by_(d, "EntityName"),
-                           SWDiv="sum(SWDiv, na.rm=TRUE)")
+    d <- dplyr::summarise(dplyr::group_by(d, EntityName),
+                           SWDiv=sum(SWDiv, na.rm=TRUE))
     return(d)
   }
   sw.div.by.entity <- lapply(yr.mo, FUN)
@@ -208,8 +208,8 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
   wmis.no.by.entity$EntityName <- pod.gw$EntityName[idxs]
 
   div.gw$id <- paste0(div.gw$WMISNumber, div.gw$YearMonth)
-  div.gw.agg <- dplyr::summarise_(dplyr::group_by_(div.gw, "id"),
-                                  GWDiv="sum(GWDiv, na.rm=TRUE)")
+  div.gw.agg <- dplyr::summarise(dplyr::group_by(div.gw, id),
+                                  GWDiv=sum(GWDiv, na.rm=TRUE))
 
   d <- as.data.frame(list(WMISNumber=rep(wmis.no, each=length(yr.mo)),
                           YearMonth=rep(yr.mo, times=length(wmis.no)), GWDiv=0))
@@ -220,11 +220,11 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
   FUN <- function(i) {
     is.neg <- gw.div.by.wmis.no$GWDiv < 0 & gw.div.by.wmis.no$YearMonth == i
     d <- gw.div.by.wmis.no[is.neg, ]
-    d <- dplyr::summarise_(dplyr::group_by_(d, "WMISNumber"),
-                           GWDiv="sum(GWDiv, na.rm=TRUE)")
+    d <- dplyr::summarise(dplyr::group_by(d, WMISNumber),
+                           GWDiv=sum(GWDiv, na.rm=TRUE))
     d <- dplyr::left_join(d, wmis.no.by.entity, by="WMISNumber")
-    d <- dplyr::summarise_(dplyr::group_by_(d, "EntityName"),
-                           GWDiv="sum(GWDiv, na.rm=TRUE)")
+    d <- dplyr::summarise(dplyr::group_by(d, EntityName),
+                           GWDiv=sum(GWDiv, na.rm=TRUE))
     return(d)
   }
   gw.div.by.entity <- lapply(yr.mo, FUN)
@@ -234,8 +234,8 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
 
   FUN <- function(i) {
     d <- div.ww[div.ww$YearMonth == i, ]
-    d <- dplyr::summarise_(dplyr::group_by_(d, "EntityName"),
-                           WWDiv="sum(WWDiv, na.rm=TRUE)")
+    d <- dplyr::summarise(dplyr::group_by(d, EntityName),
+                           WWDiv=sum(WWDiv, na.rm=TRUE))
     return(d)
   }
   ww.div.by.entity <- lapply(yr.mo, FUN)
@@ -461,9 +461,9 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
     priority.cut <- priority.cuts[priority.cuts$YearMonth == i, "Pdate_SC"]
     is.lt <- is.sc.src & (!is.na(priority.cut) & d$Pdate < priority.cut)
     d$sw.rate[is.lt] <- d$MaxDivRate[is.lt]
-    d <- dplyr::summarise_(dplyr::group_by_(d, "WaterRight"),
-                           MaxDivRate="sum(MaxDivRate, na.rm=TRUE)",
-                           sw.rate="sum(sw.rate, na.rm=TRUE)")
+    d <- dplyr::summarise(dplyr::group_by(d, WaterRight),
+                           MaxDivRate=sum(MaxDivRate, na.rm=TRUE),
+                           sw.rate=sum(sw.rate, na.rm=TRUE))
     d$sw.curt <- 1 - d$sw.rate / d$MaxDivRate
     d <- suppressWarnings(dplyr::left_join(pod.gw, d, by="WaterRight"))
     d$gw.rate <- d$IrrRate
@@ -473,13 +473,13 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
 
     is.est <- !d$WMISNumber %in% div.gw[div.gw$YearMonth == i, "WMISNumber"]
     d <- d[is.est, ]
-    d.agg <- dplyr::summarise_(dplyr::group_by_(d, "EntityName"),
-                               gw.rate="sum(gw.rate, na.rm=TRUE)")
+    d.agg <- dplyr::summarise(dplyr::group_by(d, EntityName),
+                               gw.rate=sum(gw.rate, na.rm=TRUE))
     d$fraction <- d$gw.rate / d.agg$gw.rate[match(d$EntityName, d.agg$EntityName)]
     d$gw.div <- 0
     div <- div.by.entity[[i]][, c("EntityName", "gw.div.est")]
     idxs <- match(d$EntityName, div$EntityName)
-    d$gw.div[!is.na(idxs)] <- d$fraction[!is.na(idxs)] *
+    d$gw.div[!is.na(idxs)] <- d$fraction[!is.na(idxs)] 
                               div$gw.div.est[stats::na.omit(idxs)]
     return(d)
   }
@@ -489,8 +489,8 @@ RunWaterBalance <- function(r.grid, tr.stress.periods,
   FUN <- function(i) {
     rec <- gw.div.by.wmis.no[gw.div.by.wmis.no$YearMonth == i, c("WMISNumber", "GWDiv")]
     est <- rech.by.pod[[i]][, c("WMISNumber", "gw.div")]
-    est <- dplyr::summarise_(dplyr::group_by_(est, "WMISNumber"),
-                             gw.div="sum(gw.div, na.rm=TRUE)")
+    est <- dplyr::summarise(dplyr::group_by(est, WMISNumber),
+                             gw.div=sum(gw.div, na.rm=TRUE))
     d <- merge(rec, est, all=TRUE, by="WMISNumber")
     d[[i]] <- rowSums(d[, c("GWDiv", "gw.div")], na.rm=TRUE)
     d <- d[, c("WMISNumber", i)]
